@@ -190,11 +190,9 @@ describe('PartPattern', () => {
   })
 
   describe('source', () => {
-    function assertSource(source: string) {
-      assert.equal(
-        PartPattern.parse(source, { type: 'pathname', ignoreCase: false }).source,
-        source,
-      )
+    function assertSource(expected: string) {
+      let partPattern = PartPattern.parse(expected, { type: 'pathname', ignoreCase: false })
+      assert.equal(partPattern.source, expected)
     }
 
     it('returns source representation of pattern', () => {
