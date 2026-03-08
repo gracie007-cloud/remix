@@ -1,14 +1,35 @@
+// -- Roots --
+export { run } from './lib/run.ts'
+export type { AppRuntime, RunInit } from './lib/run.ts'
+
 export { createRoot, createRangeRoot, createScheduler } from './lib/vdom.ts'
+export type { VirtualRoot, VirtualRootEventMap, VirtualRootOptions, Scheduler } from './lib/vdom.ts'
 
-export { createElement } from './lib/create-element.ts'
+// -- Client Entries --
+export { clientEntry } from './lib/client-entries.ts'
+export type {
+  SerializablePrimitive,
+  SerializableObject,
+  SerializableArray,
+  SerializableValue,
+  SerializableProps,
+  EntryComponent,
+} from './lib/client-entries.ts'
 
-export {
-  Fragment,
-  // Catch,
-  // Frame,
+// -- Components --
+export { Fragment, Frame } from './lib/component.ts'
+export type {
+  Task,
+  Handle,
+  Context,
+  FrameHandleEventMap,
+  FrameContent,
+  FrameHandle,
+  FrameProps,
 } from './lib/component.ts'
 
-// Export types from jsx.ts
+// -- Elements/JSX/Props --
+export { createElement } from './lib/create-element.ts'
 export type {
   ElementType,
   ElementProps,
@@ -17,36 +38,25 @@ export type {
   RemixNode,
   Props,
 } from './lib/jsx.ts'
+export type { HostProps, LayoutAnimationConfig } from './lib/dom.ts'
+export { createMixin } from './lib/mixin.ts'
+export type { MixinDescriptor, MixinHandle, MixinType, MixValue } from './lib/mixin.ts'
+export { TypedEventTarget } from './lib/typed-event-target.ts'
+export { addEventListeners } from './lib/event-listeners.ts'
+export { on } from './lib/mixins/on-mixin.tsx'
+export type { Dispatched } from './lib/mixins/on-mixin.tsx'
+export { keysEvents } from './lib/mixins/keys-mixin.tsx'
+export { pressEvents } from './lib/mixins/press-mixin.tsx'
+export type { PressEvent } from './lib/mixins/press-mixin.tsx'
+export { ref } from './lib/mixins/ref-mixin.tsx'
+export type { RefCallback } from './lib/mixins/ref-mixin.tsx'
+export { css } from './lib/mixins/css-mixin.tsx'
+export { animateEntrance, animateExit } from './lib/mixins/animate-mixins.tsx'
+export { animateLayout } from './lib/mixins/animate-layout-mixin.tsx'
 
-// Export types from dom.ts
-export type {
-  HostProps,
-  LayoutAnimationConfig,
-  PresenceStyleProperties,
-  PresenceKeyframe,
-  PresenceOptions,
-  PresenceConfig,
-  PresenceKeyframeConfig,
-  AnimateProp,
-} from './lib/dom.ts'
+// -- Animation --
+export { spring } from './lib/spring.ts'
+export type { SpringIterator, SpringPreset, SpringOptions } from './lib/spring.ts'
 
-// Export types from vdom.ts
-export type { VirtualRoot, VirtualRootEventMap, VirtualRootOptions, Scheduler } from './lib/vdom.ts'
-
-// Export types from component.ts
-export type { Handle } from './lib/component.ts'
-
-export { spring, type SpringIterator, type SpringPreset, type SpringOptions } from './lib/spring.ts'
-
-export { tween, easings, type TweenOptions, type BezierCurve } from './lib/tween.ts'
-
-export { hydrationRoot } from './lib/hydration-root.ts'
-
-export {
-  hydrate,
-  type HydrationRootOptions,
-  type HydrationRootEventMap,
-  type HydrationRoot,
-  type HydrateOptions,
-  type HydrateResult,
-} from './lib/hydrate-client.ts'
+export { tween, easings } from './lib/tween.ts'
+export type { TweenOptions, BezierCurve } from './lib/tween.ts'

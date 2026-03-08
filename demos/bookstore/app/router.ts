@@ -8,6 +8,7 @@ import { session } from 'remix/session-middleware'
 import { staticFiles } from 'remix/static-middleware'
 
 import { routes } from './routes.ts'
+import { initializeBookstoreDatabase } from './data/setup.ts'
 import { sessionCookie, sessionStorage } from './utils/session.ts'
 import { uploadHandler } from './utils/uploads.ts'
 
@@ -16,9 +17,12 @@ import accountController from './account.tsx'
 import authController from './auth.tsx'
 import booksController from './books.tsx'
 import cartController from './cart.tsx'
+import { toggleCart } from './cart.tsx'
 import checkoutController from './checkout.tsx'
 import * as marketingController from './marketing.tsx'
 import { uploadsAction } from './uploads.tsx'
+import fragmentsController from './fragments.tsx'
+import { loadDatabase } from './middleware/database.ts'
 
 let middleware = []
 
@@ -38,10 +42,15 @@ middleware.push(formData({ uploadHandler }))
 middleware.push(methodOverride())
 middleware.push(session(sessionCookie, sessionStorage))
 middleware.push(asyncContext())
+middleware.push(loadDatabase())
+
+await initializeBookstoreDatabase()
 
 export let router = createRouter({ middleware })
 
 router.get(routes.uploads, uploadsAction)
+router.map(routes.fragments, fragmentsController)
+router.post(routes.api.cartToggle, toggleCart)
 
 router.map(routes.home, marketingController.home)
 router.map(routes.about, marketingController.about)

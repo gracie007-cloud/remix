@@ -2,6 +2,8 @@
 
 This guide provides a comprehensive overview of the Remix Component API, its runtime behavior, and practical use cases for building interactive UIs.
 
+> Note: Host-element `on` props were removed. Use `mix={[on('event', handler)]}` for DOM event listeners.
+
 ## Getting Started
 
 ### Creating a Root
@@ -9,8 +11,8 @@ This guide provides a comprehensive overview of the Remix Component API, its run
 To start using Remix Component, create a root and render your top-level component:
 
 ```tsx
-import { createRoot } from '@remix-run/component'
-import type { Handle } from '@remix-run/component'
+import { createRoot, on } from 'remix/component'
+import type { Handle } from 'remix/component'
 
 function App(handle: Handle) {
   return () => (
@@ -38,12 +40,12 @@ function App(handle: Handle) {
     <div>
       <h1>Count: {count}</h1>
       <button
-        on={{
-          click() {
+        mix={[
+          on('click', () => {
             count++
             handle.update()
-          },
-        }}
+          }),
+        ]}
       >
         Increment
       </button>
@@ -151,9 +153,10 @@ let element = <Counter setup={10} label="Count" />
 
 The `Handle` object provides the component's interface to the framework:
 
-### `handle.update(task?)`
+### `handle.update()`
 
-Schedules a component update. Optionally accepts a task to run after the update completes.
+Schedules a component update and returns a promise that resolves with an `AbortSignal` after
+the update completes.
 
 ```tsx
 function Counter(handle: Handle) {
@@ -161,12 +164,12 @@ function Counter(handle: Handle) {
 
   return () => (
     <button
-      on={{
-        click() {
+      mix={[
+        on('click', () => {
           count++
           handle.update()
-        },
-      }}
+        }),
+      ]}
     >
       Count: {count}
     </button>
@@ -174,7 +177,7 @@ function Counter(handle: Handle) {
 }
 ```
 
-With a task:
+Waiting for the update:
 
 ```tsx
 function Player(handle: Handle) {
@@ -184,15 +187,13 @@ function Player(handle: Handle) {
   return () => (
     <button
       disabled={isPlaying}
-      on={{
-        click() {
+      mix={[
+        on('click', async () => {
           isPlaying = true
-          handle.update(() => {
-            // Task runs after update completes
-            stopButton.focus()
-          })
-        },
-      }}
+          await handle.update()
+          stopButton.focus()
+        }),
+      ]}
     >
       Play
     </button>
@@ -219,8 +220,8 @@ function Form(handle: Handle) {
       <input
         type="checkbox"
         checked={showDetails}
-        on={{
-          change(event) {
+        mix={[
+          on('change', (event) => {
             showDetails = event.currentTarget.checked
             handle.update()
             if (showDetails) {
@@ -229,11 +230,11 @@ function Form(handle: Handle) {
                 detailsSection.scrollIntoView({ behavior: 'smooth' })
               })
             }
-          },
-        }}
+          }),
+        ]}
       />
       {showDetails && (
-        <section connect={(node) => (detailsSection = node)}>Details content</section>
+        <section mix={[ref((node) => (detailsSection = node))]}>Details content</section>
       )}
     </form>
   )
@@ -292,56 +293,30 @@ function GoodExample(handle: Handle) {
 }
 ```
 
-**Pattern: Use `handle.update(task)` when you need to show loading state before async work:**
+**Pattern: await `handle.update()` when showing loading state before async work:**
 
-The task's signal is aborted when the component re-renders. If you call `handle.update()` before your async work completes, the re-render will abort the signal you're using for the async operation. When you need to update state (like showing a loading indicator) before starting async work, move the async work into a new task via `handle.update(task)`:
+When you need to show loading UI before async work starts, set loading state, call
+`await handle.update()`, and use the returned signal for async APIs.
 
 ```tsx
-// ❌ Avoid: Calling handle.update() before async work in the same task
-function BadAsyncExample(handle: Handle) {
-  let data: string[] = []
-  let loading = false
-
-  handle.queueTask(async (signal) => {
-    loading = true
-    handle.update() // This triggers a re-render, which aborts signal!
-
-    let response = await fetch('/api/data', { signal }) // AbortError: signal is aborted
-
-    data = await response.json()
-    loading = false
-    handle.update()
-  })
-
-  return () => <div>{loading ? 'Loading...' : data.join(', ')}</div>
-}
-
-// ✅ Prefer: Move async work into a new task via handle.update(task)
 function GoodAsyncExample(handle: Handle) {
   let data: string[] = []
   let loading = false
 
-  handle.queueTask(() => {
+  async function load() {
     loading = true
-    handle.update(async (signal) => {
-      // This task gets a fresh signal that won't be aborted by the update above
-      let response = await fetch('/api/data', { signal })
+    let signal = await handle.update()
+    let response = await fetch('/api/data', { signal })
+    if (signal.aborted) return
 
-      data = await response.json()
-      loading = false
-      handle.update()
-    })
-  })
+    data = await response.json()
+    loading = false
+    handle.update()
+  }
 
-  return () => <div>{loading ? 'Loading...' : data.join(', ')}</div>
+  return () => <button on={{ click: load }}>{loading ? 'Loading...' : 'Load data'}</button>
 }
 ```
-
-The key insight is that `handle.update(task)` queues a new task that runs after the update completes, with its own fresh signal. This allows you to:
-
-1. Update state to show loading UI
-2. Trigger a re-render with `handle.update(task)`
-3. Perform async work in the task with a signal that won't be aborted by that re-render
 
 **Signals in events and tasks are how you manage interruptions and disconnects:**
 
@@ -1207,9 +1182,9 @@ This example demonstrates:
 - **Element's own states**: Button's `:active` state styled directly on the button
 - **Media queries**: Responsive adjustments applied directly to elements that need them
 
-### Connect Prop
+### Ref Mixin
 
-Use the `connect` prop to get a reference to the DOM node after it's rendered. This is useful for DOM operations like focusing elements, scrolling, measuring dimensions, or setting up observers.
+Use the `ref(...)` mixin to get a reference to the DOM node after it's rendered. This is useful for DOM operations like focusing elements, scrolling, measuring dimensions, or setting up observers.
 
 ```tsx
 function Form(handle: Handle) {
@@ -1217,7 +1192,7 @@ function Form(handle: Handle) {
 
   return () => (
     <form>
-      <input type="text" connect={(node) => (inputRef = node)} />
+      <input type="text" mix={[ref((node) => (inputRef = node))]} />
       <button
         on={{
           click() {
@@ -1233,7 +1208,7 @@ function Form(handle: Handle) {
 }
 ```
 
-The `connect` callback can optionally receive an `AbortSignal` as a second parameter, which is aborted when the element is removed from the DOM. Use this for cleanup operations:
+The `ref` callback receives an `AbortSignal` as its second parameter, which is aborted when the element is removed from the DOM. Use this for cleanup operations:
 
 ```tsx
 function ResizeTracker(handle: Handle) {
@@ -1241,23 +1216,25 @@ function ResizeTracker(handle: Handle) {
 
   return () => (
     <div
-      connect={(node, signal) => {
-        // Set up ResizeObserver
-        let observer = new ResizeObserver((entries) => {
-          let entry = entries[0]
-          if (entry) {
-            dimensions.width = Math.round(entry.contentRect.width)
-            dimensions.height = Math.round(entry.contentRect.height)
-            handle.update()
-          }
-        })
-        observer.observe(node)
+      mix={[
+        ref((node, signal) => {
+          // Set up ResizeObserver
+          let observer = new ResizeObserver((entries) => {
+            let entry = entries[0]
+            if (entry) {
+              dimensions.width = Math.round(entry.contentRect.width)
+              dimensions.height = Math.round(entry.contentRect.height)
+              handle.update()
+            }
+          })
+          observer.observe(node)
 
-        // Clean up when element is removed
-        signal.addEventListener('abort', () => {
-          observer.disconnect()
-        })
-      }}
+          // Clean up when element is removed
+          signal.addEventListener('abort', () => {
+            observer.disconnect()
+          })
+        }),
+      ]}
     >
       Size: {dimensions.width} × {dimensions.height}
     </div>
@@ -1265,7 +1242,7 @@ function ResizeTracker(handle: Handle) {
 }
 ```
 
-The `connect` callback is called only once when the element is first rendered, not on every update.
+The `ref` callback is called only once when the element is first rendered, not on every update.
 
 ### Key Prop
 
@@ -1420,7 +1397,7 @@ function ThemedContent(handle: Handle) {
 For better performance, use `TypedEventTarget` to avoid updating the entire subtree:
 
 ```tsx
-import { TypedEventTarget } from '@remix-run/interaction'
+import { TypedEventTarget } from 'remix/component'
 
 class Theme extends TypedEventTarget<{ change: Event }> {
   #value: 'light' | 'dark' = 'light'
@@ -1525,7 +1502,7 @@ function Analytics(handle: Handle, setup: { apiKey: string }) {
 #### EventEmitters
 
 ```tsx
-import { TypedEventTarget } from '@remix-run/interaction'
+import { TypedEventTarget } from 'remix/component'
 
 class DataEvent extends Event {
   constructor(public value: string) {
@@ -1632,7 +1609,7 @@ function Modal(handle: Handle) {
   return () => (
     <div>
       <button
-        connect={(node) => (openButton = node)}
+        mix={[ref((node) => (openButton = node))]}
         on={{
           click() {
             isOpen = true
@@ -1650,7 +1627,7 @@ function Modal(handle: Handle) {
       {isOpen && (
         <div role="dialog">
           <button
-            connect={(node) => (closeButton = node)}
+            mix={[ref((node) => (closeButton = node))]}
             on={{
               click() {
                 isOpen = false
@@ -1682,7 +1659,7 @@ function ScrollableList(handle: Handle) {
   return () => (
     <div>
       <input
-        connect={(node) => (newItemInput = node)}
+        mix={[ref((node) => (newItemInput = node))]}
         on={{
           keydown(event) {
             if (event.key === 'Enter') {
@@ -1701,7 +1678,7 @@ function ScrollableList(handle: Handle) {
         }}
       />
       <div
-        connect={(node) => (listContainer = node)}
+        mix={[ref((node) => (listContainer = node))]}
         css={{
           maxHeight: '300px',
           overflowY: 'auto',

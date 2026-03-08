@@ -13,6 +13,9 @@ describe('hydration', () => {
 
   afterEach(() => {
     document.body.innerHTML = ''
+    for (let node of Array.from(document.head.childNodes)) {
+      document.head.removeChild(node)
+    }
   })
 
   describe('special case props to HTML attributes', () => {
@@ -100,7 +103,8 @@ describe('hydration', () => {
       root.render(<meta httpEquiv="refresh" content="5" />)
       root.flush()
 
-      expect(container.querySelector('meta')).toBe(existingMeta)
+      expect(document.head.querySelector('meta')).toBe(existingMeta)
+      expect(container.querySelector('meta')).toBeNull()
       expect(existingMeta.getAttribute('http-equiv')).toBe('refresh')
     })
 
@@ -195,6 +199,35 @@ describe('hydration', () => {
 
       expect(container.querySelector('svg')).toBe(existingSvg)
       expect(existingSvg.getAttribute('preserveAspectRatio')).toBe('xMidYMid meet')
+    })
+
+    it('hydrates SVG filterUnits with canonical case and semantics', async () => {
+      let html = await renderToString(
+        <svg>
+          <defs>
+            <filter id="f" filterUnits="userSpaceOnUse" />
+          </defs>
+        </svg>,
+      )
+      container.innerHTML = html
+
+      let existingFilter = container.querySelector('#f')
+      invariant(existingFilter instanceof SVGFilterElement)
+
+      let root = createRoot(container)
+      root.render(
+        <svg>
+          <defs>
+            <filter id="f" filterUnits="userSpaceOnUse" />
+          </defs>
+        </svg>,
+      )
+      root.flush()
+
+      expect(container.querySelector('#f')).toBe(existingFilter)
+      expect(existingFilter.getAttribute('filterUnits')).toBe('userSpaceOnUse')
+      expect(existingFilter.getAttribute('filter-units')).toBe(null)
+      expect(existingFilter.filterUnits.baseVal).toBe(1)
     })
   })
 })

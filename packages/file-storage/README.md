@@ -1,24 +1,18 @@
 # file-storage
 
-`file-storage` is a key/value interface for storing [`File` objects](https://developer.mozilla.org/en-US/docs/Web/API/File) in JavaScript.
-
-Handling file uploads and storage is a common requirement in web applications, but each storage backend (local disk, AWS S3, Cloudflare R2, etc.) has its own API and conventions. This fragmentation makes it difficult to write portable code that can easily switch between storage providers or support multiple backends simultaneously.
-
-Similar to how `localStorage` allows you to store key/value pairs of strings in the browser, `file-storage` allows you to store key/value pairs of files on the server with a consistent interface regardless of the underlying storage mechanism.
+Key/value storage interfaces for server-side [`File` objects](https://developer.mozilla.org/en-US/docs/Web/API/File). `file-storage` gives Remix apps one consistent API across local disk and memory backends.
 
 ## Features
 
 - **Simple API** - Intuitive key/value API (like [Web Storage](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API), but for `File`s instead of strings)
-- **Generic Interface** - `FileStorage` interface that works for various large object storage backends (can be adapted to AWS S3, Cloudflare R2, etc.)
+- **Multiple Backends** - Built-in filesystem and memory backends
 - **Streaming Support** - Stream file content to and from storage
 - **Metadata Preservation** - Preserves all `File` metadata including `file.name`, `file.type`, and `file.lastModified`
 
 ## Installation
 
-Install from [npm](https://www.npmjs.com/):
-
 ```sh
-npm install @remix-run/file-storage
+npm i remix
 ```
 
 ## Usage
@@ -26,7 +20,7 @@ npm install @remix-run/file-storage
 ### File System
 
 ```ts
-import { createFsFileStorage } from '@remix-run/file-storage/fs'
+import { createFsFileStorage } from 'remix/file-storage/fs'
 
 let storage = createFsFileStorage('./user/files')
 
@@ -48,6 +42,7 @@ await storage.remove(key)
 
 ## Related Packages
 
+- [`file-storage-s3`](https://github.com/remix-run/remix/tree/main/packages/file-storage-s3) - S3 backend for `file-storage`
 - [`form-data-parser`](https://github.com/remix-run/remix/tree/main/packages/form-data-parser) - Pairs well with this library for storing `FileUpload` objects received in `multipart/form-data` requests
 - [`lazy-file`](https://github.com/remix-run/remix/tree/main/packages/lazy-file) - The streaming `File` implementation used internally to stream files from storage
 

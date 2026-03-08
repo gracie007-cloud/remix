@@ -1,20 +1,27 @@
 # session-middleware
 
-Middleware for managing sessions with [`@remix-run/fetch-router`](https://github.com/remix-run/remix/tree/main/packages/fetch-router) via securely signed cookies.
+Session middleware for Remix using signed cookies. It loads session state from incoming requests, stores it in request context using `Session`, and persists updates automatically.
+
+## Features
+
+- **Session Lifecycle Handling** - Reads and saves session state per request
+- **Context Integration** - Exposes session APIs directly on request context
+- **Secure Cookie Support** - Designed for signed session cookies
 
 ## Installation
 
 ```sh
-npm install @remix-run/session-middleware
+npm i remix
 ```
 
 ## Usage
 
 ```ts
-import { createRouter } from '@remix-run/fetch-router'
-import { createCookie } from '@remix-run/cookie'
-import { createCookieSessionStorage } from '@remix-run/session/cookie-storage'
-import { session } from '@remix-run/session-middleware'
+import { createRouter } from 'remix/fetch-router'
+import { createCookie } from 'remix/cookie'
+import { Session } from 'remix/session'
+import { createCookieSessionStorage } from 'remix/session/cookie-storage'
+import { session } from 'remix/session-middleware'
 
 let sessionCookie = createCookie('__session', {
   secrets: ['s3cr3t'], // session cookies must be signed!
@@ -30,15 +37,16 @@ let router = createRouter({
 })
 
 router.get('/', (context) => {
-  context.session.set('count', Number(context.session.get('count') ?? 0) + 1)
-  return new Response(`Count: ${context.session.get('count')}`)
+  let session = context.get(Session)
+  session.set('count', Number(session.get('count') ?? 0) + 1)
+  return new Response(`Count: ${session.get('count')}`)
 })
 ```
 
 The middleware:
 
 - Reads the session from the cookie on incoming requests
-- Makes it available as `context.session`
+- Makes it available as `context.get(Session)`
 - Automatically saves session changes and sets the cookie on responses
 
 Note: The session cookie must be signed for security. This prevents tampering with the session data on the client.
@@ -48,9 +56,11 @@ Note: The session cookie must be signed for security. This prevents tampering wi
 A basic login/logout flow could look like this:
 
 ```ts
-import * as res from '@remix-run/fetch-router/response-helpers'
+import * as res from 'remix/fetch-router/response-helpers'
+import { Session } from 'remix/session'
 
-router.get('/login', ({ session }) => {
+router.get('/login', ({ get }) => {
+  let session = get(Session)
   let error = session.get('error')
   return res.html(`
     <html>
@@ -67,7 +77,9 @@ router.get('/login', ({ session }) => {
   `)
 })
 
-router.post('/login', ({ session, formData }) => {
+router.post('/login', ({ get }) => {
+  let session = get(Session)
+  let formData = get(FormData)
   let username = formData.get('username')
   let password = formData.get('password')
 
@@ -83,7 +95,8 @@ router.post('/login', ({ session, formData }) => {
   return res.redirect('/dashboard')
 })
 
-router.post('/logout', ({ session }) => {
+router.post('/logout', ({ get }) => {
+  let session = get(Session)
   session.destroy()
   return res.redirect('/')
 })

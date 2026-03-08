@@ -104,6 +104,8 @@ export default [
       'prefer-let/prefer-let': 'error',
       // Disallow `var` entirely
       'no-var': 'error',
+      // Prefer concise arrow callbacks when only returning an expression
+      'arrow-body-style': ['error', 'as-needed'],
     },
   },
   {
@@ -157,7 +159,7 @@ export default [
       'jsdoc/check-param-names': 'error',
       'jsdoc/check-property-names': 'error',
       'jsdoc/check-syntax': 'error',
-      'jsdoc/check-tag-names': ['error'],
+      'jsdoc/check-tag-names': 'error',
       'jsdoc/check-template-names': 'error',
       'jsdoc/check-types': 'error',
       'jsdoc/check-values': 'error',

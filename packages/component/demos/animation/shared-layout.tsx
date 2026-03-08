@@ -1,4 +1,12 @@
-import type { Handle, Props, RemixNode } from 'remix/component'
+import {
+  animateEntrance,
+  animateExit,
+  css,
+  on,
+  type Handle,
+  type Props,
+  type RemixNode,
+} from 'remix/component'
 
 let ease = 'cubic-bezier(0.26, 0.02, 0.23, 0.94)'
 
@@ -9,34 +17,38 @@ function OverlapExample(handle: Handle) {
   })
 
   return ({ state }: { state: boolean }) => {
-    let animation = {
-      enter: shouldAnimate && {
-        opacity: 0,
-        transform: 'scale(0.6)',
-        duration: 300,
-        easing: ease,
-      },
-      exit: {
+    let animationMix = [
+      animateExit({
         opacity: 0,
         transform: 'scale(0.8)',
         duration: 300,
         easing: ease,
-      },
+      }),
+    ]
+    if (shouldAnimate) {
+      animationMix.unshift(
+        animateEntrance({
+          opacity: 0,
+          transform: 'scale(0.6)',
+          duration: 300,
+          easing: ease,
+        }),
+      )
     }
 
     return (
       <div
         // grid layout so children render in the same position
-        css={{ display: 'grid', width: 80, height: 80, '& > *': { gridArea: '1 / 1' } }}
+        mix={[css({ display: 'grid', width: 80, height: 80, '& > *': { gridArea: '1 / 1' } })]}
       >
         {state ? (
-          <div key="filled" animate={animation}>
+          <div key="filled" mix={animationMix}>
             <Circle filled>
               <FilledIcon />
             </Circle>
           </div>
         ) : (
-          <div key="outline" animate={animation}>
+          <div key="outline" mix={animationMix}>
             <Circle>
               <OutlineIcon />
             </Circle>
@@ -54,35 +66,39 @@ function WaitExample(handle: Handle) {
   })
 
   return ({ state }: { state: boolean }) => {
-    let animation = {
-      enter: shouldAnimate && {
-        opacity: 0,
-        transform: 'scale(0.6)',
-        duration: 300,
-        easing: ease,
-        delay: 300,
-      },
-      exit: {
+    let animationMix = [
+      animateExit({
         opacity: 0,
         transform: 'scale(0.8)',
         duration: 300,
         easing: ease,
-      },
+      }),
+    ]
+    if (shouldAnimate) {
+      animationMix.unshift(
+        animateEntrance({
+          opacity: 0,
+          transform: 'scale(0.6)',
+          duration: 300,
+          easing: ease,
+          delay: 300,
+        }),
+      )
     }
 
     return (
       <div
         // grid layout so children render in the same position
-        css={{ display: 'grid', width: 80, height: 80, '& > *': { gridArea: '1 / 1' } }}
+        mix={[css({ display: 'grid', width: 80, height: 80, '& > *': { gridArea: '1 / 1' } })]}
       >
         {state ? (
-          <div key="filled" animate={animation}>
+          <div key="filled" mix={animationMix}>
             <Circle filled>
               <FilledIcon />
             </Circle>
           </div>
         ) : (
-          <div key="outline" animate={animation}>
+          <div key="outline" mix={animationMix}>
             <Circle>
               <OutlineIcon />
             </Circle>
@@ -100,22 +116,24 @@ export function SharedLayout(handle: Handle) {
     shouldAnimate = true
   })
 
-  return () => {
-    return (
-      <div
-        css={{
+  return () => (
+    <div
+      mix={[
+        css({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           gap: 16,
-        }}
-      >
-        <div css={{ display: 'flex', gap: 16 }}>
-          <OverlapExample state={state} />
-          <WaitExample state={state} />
-        </div>
-        <button
-          css={{
+        }),
+      ]}
+    >
+      <div mix={[css({ display: 'flex', gap: 16 })]}>
+        <OverlapExample state={state} />
+        <WaitExample state={state} />
+      </div>
+      <button
+        mix={[
+          css({
             backgroundColor: '#0f1115',
             color: '#f5f5f5',
             border: 'none',
@@ -128,36 +146,36 @@ export function SharedLayout(handle: Handle) {
             '&:active': {
               transform: 'scale(0.95)',
             },
-          }}
-          on={{
-            click() {
-              state = !state
-              handle.update()
-            },
-          }}
-        >
-          Switch
-        </button>
-      </div>
-    )
-  }
+          }),
+          on('click', () => {
+            state = !state
+            handle.update()
+          }),
+        ]}
+      >
+        Switch
+      </button>
+    </div>
+  )
 }
 
 function Circle() {
   return (props: { filled?: boolean; children: RemixNode }) => (
     <div
-      css={{
-        width: 80,
-        height: 80,
-        borderRadius: '50%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxSizing: 'border-box',
-        backgroundColor: props.filled ? '#0f1115' : 'transparent',
-        color: props.filled ? '#f5f5f5' : '#0f1115',
-        border: props.filled ? '2px solid #0f1115' : '2px solid #0f1115',
-      }}
+      mix={[
+        css({
+          width: 80,
+          height: 80,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxSizing: 'border-box',
+          backgroundColor: props.filled ? '#0f1115' : 'transparent',
+          color: props.filled ? '#f5f5f5' : '#0f1115',
+          border: props.filled ? '2px solid #0f1115' : '2px solid #0f1115',
+        }),
+      ]}
     >
       {props.children}
     </div>
